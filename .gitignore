@@ -39,3 +39,6 @@ coverage/
 *.key
 credentials.json
 service-account*.json
+
+# Local database credentials
+.setu-db-password
