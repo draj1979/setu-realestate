@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +5,517 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum OrganizationMemberRole {
+  OWNER
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum AgentStatus {
+  DRAFT
+  READY
+  ACTIVE
+  PAUSED
+  ERROR
+}
+
+enum LeadStatus {
+  NEW
+  ENGAGED
+  QUALIFYING
+  QUALIFIED
+  FOLLOWUP
+  SITE_VISIT_PROPOSED
+  SITE_VISIT_SCHEDULED
+  SITE_VISIT_COMPLETED
+  HANDED_OFF
+  LOST
+}
+
+enum LeadPurpose {
+  END_USE
+  INVESTMENT
+  UNKNOWN
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+  HANDED_OFF
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  LOCATION
+  BUTTON
+  INTERACTIVE
+  UNKNOWN
+}
+
+enum FollowupStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+enum SiteVisitStatus {
+  PROPOSED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum MediaType {
+  IMAGE
+  FLOOR_PLAN
+  BROCHURE
+  DOCUMENT
+  OTHER
+}
+
+enum AgentRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  ACTIVATE
+  PAUSE
+  LOGIN
+  LOGOUT
+  HANDOFF
+  BOOK_SITE_VISIT
+  OTHER
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String?  @unique
+  phone       String?  @unique
+  displayName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships OrganizationMembership[]
+  sessions    Session[]
+  auditLogs   AuditLog[]               @relation("AuditActor")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships OrganizationMembership[]
+  projects    Project[]
+  auditLogs   AuditLog[]
+}
+
+model OrganizationMembership {
+  id             String                 @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrganizationMemberRole
+  createdAt      DateTime               @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  description    String?
+  status         ProjectStatus @default(DRAFT)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscription       ProjectSubscription?
+  whatsappChannel    WhatsAppChannel?
+  calendarConnection GoogleCalendarConnection?
+  agentConfiguration AgentConfiguration?
+  leads              Lead[]
+  conversations      Conversation[]
+  followupJobs       FollowupJob[]
+  siteVisits         SiteVisit[]
+  documents          Document[]
+  media              ProjectMedia[]
+  videos             ProjectVideo[]
+  agentRuns          AgentRun[]
+  usageEvents        UsageEvent[]
+  auditLogs          AuditLog[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model ProjectSubscription {
+  id                 String             @id @default(cuid())
+  projectId          String             @unique
+  planName           String
+  monthlyPriceInr    Int
+  status             SubscriptionStatus @default(TRIAL)
+  startedAt          DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model WhatsAppChannel {
+  id                 String   @id @default(cuid())
+  projectId          String   @unique
+  phoneNumberId      String   @unique
+  businessAccountId  String
+  displayPhoneNumber String?
+  accessTokenRef     String?
+  webhookSecretRef   String?
+  active             Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model GoogleCalendarConnection {
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  calendarId      String
+  accessTokenRef  String
+  refreshTokenRef String
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AgentConfiguration {
+  id                 String      @id @default(cuid())
+  projectId          String      @unique
+  name               String
+  role               String?
+  vibe               String?
+  goal               String?
+  businessRules      String?
+  status             AgentStatus @default(DRAFT)
+  model              String      @default("gemini-3.1-flash-lite")
+  openclawAgentId    String?
+  openclawRuntimeRef String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([openclawAgentId])
+}
+
+model Lead {
+  id                String      @id @default(cuid())
+  projectId         String
+  whatsappNumber    String
+  name              String?
+  configuration     String?
+  budget            Decimal?    @db.Decimal(14, 2)
+  purpose           LeadPurpose @default(UNKNOWN)
+  timeline          String?
+  preferredLocation String?
+  score             Int         @default(0)
+  status            LeadStatus  @default(NEW)
+  notes             String?
+  optedOut          Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  conversation Conversation?
+  events       LeadEvent[]
+  followups    FollowupJob[]
+  siteVisits   SiteVisit[]
+  agentRuns    AgentRun[]
+
+  @@unique([projectId, whatsappNumber])
+  @@index([projectId, status])
+  @@index([projectId, score])
+}
+
+model Conversation {
+  id            String             @id @default(cuid())
+  projectId     String
+  leadId        String             @unique
+  status        ConversationStatus @default(ACTIVE)
+  startedAt     DateTime           @default(now())
+  lastMessageAt DateTime?
+  closedAt      DateTime?
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead     Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([projectId, status])
+  @@index([projectId, lastMessageAt])
+}
+
+model Message {
+  id             String           @id @default(cuid())
+  conversationId String
+  waMessageId    String?          @unique
+  direction      MessageDirection
+  type           MessageType      @default(TEXT)
+  text           String?
+  mediaUrl       String?
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model LeadEvent {
+  id        String   @id @default(cuid())
+  leadId    String
+  eventType String
+  data      Json?
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@index([eventType])
+}
+
+model FollowupJob {
+  id          String         @id @default(cuid())
+  projectId   String
+  leadId      String
+  scheduledAt DateTime
+  status      FollowupStatus @default(PENDING)
+  message     String?
+  attempts    Int            @default(0)
+  sentAt      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead    Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status, scheduledAt])
+  @@index([leadId, status])
+}
+
+model SiteVisit {
+  id              String          @id @default(cuid())
+  projectId       String
+  leadId          String
+  calendarEventId String?
+  startAt         DateTime
+  endAt           DateTime
+  status          SiteVisitStatus @default(PROPOSED)
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead    Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, startAt])
+  @@index([leadId, status])
+}
+
+model Document {
+  id          String         @id @default(cuid())
+  projectId   String
+  name        String
+  storagePath String
+  mimeType    String
+  sizeBytes   BigInt?
+  status      DocumentStatus @default(UPLOADED)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks  DocumentChunk[]
+
+  @@index([projectId, status])
+}
+
+model DocumentChunk {
+  id         String   @id @default(cuid())
+  documentId String
+  chunkIndex Int
+  content    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+}
+
+model ProjectMedia {
+  id          String    @id @default(cuid())
+  projectId   String
+  name        String
+  storagePath String
+  mimeType    String
+  type        MediaType @default(OTHER)
+  caption     String?
+  createdAt   DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, type])
+}
+
+model ProjectVideo {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  url       String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model AgentRun {
+  id             String         @id @default(cuid())
+  projectId      String
+  leadId         String?
+  conversationId String?
+  status         AgentRunStatus @default(RUNNING)
+  model          String?
+  inputTokens    Int?
+  outputTokens   Int?
+  latencyMs      Int?
+  error          String?
+  startedAt      DateTime       @default(now())
+  completedAt    DateTime?
+
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lead      Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  toolCalls AgentToolCall[]
+
+  @@index([projectId, startedAt])
+  @@index([leadId, startedAt])
+}
+
+model AgentToolCall {
+  id         String   @id @default(cuid())
+  agentRunId String
+  toolName   String
+  input      Json?
+  output     Json?
+  success    Boolean  @default(true)
+  latencyMs  Int?
+  createdAt  DateTime @default(now())
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@index([agentRunId, createdAt])
+  @@index([toolName])
+}
+
+model UsageEvent {
+  id        String   @id @default(cuid())
+  projectId String
+  eventType String
+  quantity  Int      @default(1)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  organizationId String
+  projectId      String?
+  actorUserId    String?
+  action         AuditAction
+  entityType     String?
+  entityId       String?
+  metadata       Json?
+  createdAt      DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor        User?        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([actorUserId, createdAt])
 }
