@@ -133,8 +133,8 @@ export async function POST(
       if (document.mimeType === "application/pdf") {
         const pdf = await pdfjsLib.getDocument({
           data: new Uint8Array(fileBuffer),
-
-        }).promise;
+          disableWorker: true,
+        } as Parameters<typeof pdfjsLib.getDocument>[0]).promise;
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
           const page = await pdf.getPage(pageNumber);
           const content = await page.getTextContent();
