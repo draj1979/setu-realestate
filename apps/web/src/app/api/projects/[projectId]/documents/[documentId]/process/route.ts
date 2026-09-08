@@ -200,7 +200,7 @@ export async function POST(
     where: { id: document.id },
     data: { status: "READY" },
   });
-});
+}, { timeout: 30_000 });
 
       return NextResponse.json({
         ok: true,
