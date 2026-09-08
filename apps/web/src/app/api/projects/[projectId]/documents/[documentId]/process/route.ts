@@ -5,9 +5,8 @@ import { db } from "@setu/db";
 import { generateEmbedding } from "@/lib/ai/embeddings";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { pathToFileURL } from "node:url";
-
 pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
-  process.cwd() + "/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"
+  process.cwd() + "/apps/web/public/pdfjs/pdf.worker.mjs"
 ).href;
 
 const CHUNK_SIZE = 1200;
