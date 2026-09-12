@@ -2,6 +2,10 @@
   "name": "@setu/db",
   "version": "0.1.0",
   "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
@@ -10,7 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/pg": "^8.23.1",
+    "@types/pg": "^8.15.5",
     "prisma": "7.10.0",
     "typescript": "^5.9.3"
   },

@@ -42,3 +42,4 @@ service-account*.json
 
 # Local database credentials
 .setu-db-password
+apps/web/.env.production

@@ -3,4 +3,11 @@ packages:
   - "packages/*"
   - "openclaw/*"
 allowBuilds:
+  '@firebase/util': true
+  '@prisma/engines': true
+  prisma: true
+  protobufjs: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@openclaw/gateway-client@2026.9.2'
+  - '@openclaw/gateway-protocol@2026.9.2'

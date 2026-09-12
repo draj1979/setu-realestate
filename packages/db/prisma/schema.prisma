@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
 }
 
 datasource db {
@@ -130,6 +131,7 @@ enum AuditAction {
 
 model User {
   id          String   @id @default(cuid())
+  firebaseUid String?  @unique
   email       String?  @unique
   phone       String?  @unique
   displayName String?
@@ -230,7 +232,7 @@ model ProjectSubscription {
 model WhatsAppChannel {
   id                 String   @id @default(cuid())
   projectId          String   @unique
-  phoneNumberId      String   @unique
+  phoneNumberId      String
   businessAccountId  String
   displayPhoneNumber String?
   accessTokenRef     String?
@@ -240,6 +242,8 @@ model WhatsAppChannel {
   updatedAt          DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([phoneNumberId])
 }
 
 model GoogleCalendarConnection {
@@ -325,7 +329,7 @@ model Conversation {
 model Message {
   id             String           @id @default(cuid())
   conversationId String
-  waMessageId    String?          @unique
+  waMessageId    String?
   direction      MessageDirection
   type           MessageType      @default(TEXT)
   text           String?
@@ -335,6 +339,7 @@ model Message {
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  @@unique([conversationId, waMessageId])
   @@index([conversationId, createdAt])
 }
 
@@ -412,6 +417,7 @@ model DocumentChunk {
   chunkIndex Int
   content    String
   metadata   Json?
+  embedding  Unsupported("vector(768)")?
   createdAt  DateTime @default(now())
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)

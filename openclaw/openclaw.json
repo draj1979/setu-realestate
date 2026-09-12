@@ -1,0 +1,52 @@
+{
+  "gateway": {
+    "mode": "local",
+    "auth": {
+      "mode": "token",
+      "token": {
+        "source": "env",
+        "provider": "setu",
+        "id": "OPENCLAW_GATEWAY_TOKEN"
+      }
+    },
+    "trustedProxies": [
+      "0.0.0.0/0"
+    ]
+  },
+  "agents": {
+    "ownership": "explicit",
+    "defaults": {
+      "systemAgent": {
+        "agentId": "setu-sales"
+      },
+      "heartbeat": {
+        "agentId": "setu-sales"
+      }
+    },
+    "entries": {
+      "setu-sales": {
+        "name": "setu-sales",
+        "workspace": "/app/workspace",
+        "agentDir": "/app/state/agents/setu-sales/agent",
+        "model": "google/gemini-3.1-flash-lite",
+        "identity": {
+          "name": "setu-sales"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "google": {
+        "enabled": true
+      }
+    }
+  },
+  "secrets": {
+    "providers": {
+      "setu": {
+        "source": "env"
+      }
+    }
+  }
+}

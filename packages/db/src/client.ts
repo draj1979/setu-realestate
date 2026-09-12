@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "./generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -22,18 +22,27 @@ function createPrismaClient() {
     });
 
   const adapter = new PrismaPg(pool);
-
   const prisma = new PrismaClient({ adapter });
 
   if (process.env.NODE_ENV !== "production") {
     globalForPrisma.pool = pool;
+    globalForPrisma.prisma = prisma;
   }
 
   return prisma;
 }
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
+export function getDb() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
+  return globalForPrisma.prisma;
 }
+
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    const client = getDb();
+    return client[property as keyof PrismaClient];
+  },
+});
