@@ -10,8 +10,15 @@
       }
     },
     "trustedProxies": [
-      "0.0.0.0/0"
-    ]
+      "169.254.0.0/16"
+    ],
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
   },
   "agents": {
     "ownership": "explicit",
@@ -46,6 +53,17 @@
     "providers": {
       "setu": {
         "source": "env"
+      }
+    }
+  },
+  "mcp": {
+    "servers": {
+      "setu": {
+        "transport": "streamable-http",
+        "url": "https://setu-web-6avtjfpucq-as.a.run.app/api/mcp",
+        "headers": {
+          "Authorization": "Bearer ${SETU_MCP_TOKEN}"
+        }
       }
     }
   }

@@ -69,3 +69,70 @@ export async function GET(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ projectId: string }> },
+) {
+  try {
+    const authorization = request.headers.get("authorization");
+
+    if (!authorization?.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { ok: false, error: "Missing authentication token" },
+        { status: 401 },
+      );
+    }
+
+    const idToken = authorization.slice("Bearer ".length);
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+
+    const { projectId } = await params;
+
+    const user = await db.user.findUnique({
+      where: { firebaseUid: decodedToken.uid },
+      include: { memberships: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { ok: false, error: "User not found" },
+        { status: 404 },
+      );
+    }
+
+    const project = await db.project.findFirst({
+      where: {
+        id: projectId,
+        organizationId: {
+          in: user.memberships.map((m) => m.organizationId),
+        },
+      },
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { ok: false, error: "Project not found" },
+        { status: 404 },
+      );
+    }
+
+    // Soft-disconnect only: mark inactive rather than deleting the row, so
+    // the inbound webhook (which looks up channels by phoneNumberId) stops
+    // routing to this project immediately, and the builder can reconnect
+    // (possibly with a different WhatsApp number) without losing history.
+    await db.whatsAppChannel.updateMany({
+      where: { projectId },
+      data: { active: false },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("WhatsApp disconnect failed:", error);
+
+    return NextResponse.json(
+      { ok: false, error: "Could not disconnect WhatsApp" },
+      { status: 500 },
+    );
+  }
+}

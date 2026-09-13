@@ -3,9 +3,7 @@ import { openclawClient } from "./client";
 async function main() {
   console.log("Starting OpenClaw Gateway client...");
 
-  openclawClient.start();
-
-  await new Promise((resolve) => setTimeout(resolve, 5_000));
+  await openclawClient.ensureConnected();
 
   try {
     const run = await openclawClient.request<{

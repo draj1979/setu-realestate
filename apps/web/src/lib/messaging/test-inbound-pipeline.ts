@@ -8,7 +8,7 @@ async function main() {
   const result = await processInboundMessage({
     projectId,
     whatsappNumber,
-    message: "I am looking for a 3 BHK. My budget is around 2 crore.",
+    message: "I am looking for 3BHK at Bangalore",
     waMessageId: `test-wa-${Date.now()}`,
   });
 

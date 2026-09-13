@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { signOutUser } from "@/lib/auth";
 
 type Organization = {
   id: string;
@@ -28,6 +29,8 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   async function getToken() {
     const user = auth.currentUser;
@@ -112,6 +115,29 @@ export default function DashboardPage() {
 
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  async function handleLogout() {
+    try {
+      await signOutUser();
+    } finally {
+      window.location.href = "/";
+    }
+  }
 
   async function handleCreateProject(
     event: FormEvent<HTMLFormElement>,
@@ -214,7 +240,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div ref={menuRef} className="relative flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <div className="text-sm font-semibold text-slate-800">
                 {organization?.name}
@@ -224,9 +250,44 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-100 text-sm font-bold text-cyan-700">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((current) => !current)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-cyan-100 text-sm font-bold text-cyan-700 transition hover:bg-cyan-200"
+            >
               {organization?.name?.charAt(0).toUpperCase() ?? "B"}
-            </div>
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-11 z-10 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/profile";
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  My Profile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/settings";
+                  }}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Builder Settings
+                </button>
+                <div className="my-1 border-t border-slate-100" />
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
