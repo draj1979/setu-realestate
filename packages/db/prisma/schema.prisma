@@ -144,11 +144,13 @@ model User {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  logoStoragePath String?
+  logoMimeType    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   memberships OrganizationMembership[]
   projects    Project[]
@@ -182,14 +184,16 @@ model Session {
 }
 
 model Project {
-  id             String        @id @default(cuid())
-  organizationId String
-  name           String
-  slug           String
-  description    String?
-  status         ProjectStatus @default(DRAFT)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  organizationId  String
+  name            String
+  slug            String
+  description     String?
+  status          ProjectStatus @default(DRAFT)
+  logoStoragePath String?
+  logoMimeType    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   subscription       ProjectSubscription?

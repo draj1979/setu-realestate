@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { signOutUser } from "@/lib/auth";
 
 type Project = {
   id: string;
@@ -183,14 +184,29 @@ export default function ProjectPage() {
             </div>
           </button>
 
-          <button
-            onClick={() => {
-              window.location.href = "/dashboard";
-            }}
-            className="text-sm font-semibold text-slate-500 hover:text-cyan-600"
-          >
-            ← All Projects
-          </button>
+          <div className="flex items-center gap-5">
+            <button
+              onClick={() => {
+                window.location.href = "/dashboard";
+              }}
+              className="text-sm font-semibold text-slate-500 hover:text-cyan-600"
+            >
+              ← All Projects
+            </button>
+
+            <button
+              onClick={async () => {
+                try {
+                  await signOutUser();
+                } finally {
+                  window.location.href = "/";
+                }
+              }}
+              className="text-sm font-semibold text-slate-500 hover:text-red-600"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -219,12 +235,40 @@ export default function ProjectPage() {
             <button
               key={section.name}
               onClick={() => {
+                if (section.name === "Overview") {
+                  window.location.href = `/projects/${project.id}/overview`;
+                }
+
                 if (section.name === "Knowledge") {
                   window.location.href = `/projects/${project.id}/knowledge`;
                 }
 
+                if (section.name === "Media") {
+                  window.location.href = `/projects/${project.id}/media`;
+                }
+
                 if (section.name === "WhatsApp") {
                   window.location.href = `/projects/${project.id}/whatsapp`;
+                }
+
+                if (section.name === "Calendar") {
+                  window.location.href = `/projects/${project.id}/calendar`;
+                }
+
+                if (section.name === "Leads") {
+                  window.location.href = `/projects/${project.id}/leads`;
+                }
+
+                if (section.name === "Conversations") {
+                  window.location.href = `/projects/${project.id}/conversations`;
+                }
+
+                if (section.name === "Follow-ups") {
+                  window.location.href = `/projects/${project.id}/followups`;
+                }
+
+                if (section.name === "Settings") {
+                  window.location.href = `/projects/${project.id}/settings`;
                 }
               }}
               className="group rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-md"

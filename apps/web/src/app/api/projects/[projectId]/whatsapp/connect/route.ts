@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { adminAuth } from "@/lib/firebase-admin";
+import { addSecretVersion } from "@/lib/secrets";
 import { db } from "@setu/db";
 
 const META_GRAPH_VERSION = "v23.0";
 const META_APP_ID = "4464692527110370";
+// Every project connected today shares the same underlying Meta test WABA
+// (see the multi-project phone-number-sharing support), so one shared
+// secret for the send-side access token is correct for the current state
+// of the system. A future WABA/phone number distinct from this one would
+// need its own secret, referenced per-channel instead of globally.
+const WHATSAPP_ACCESS_TOKEN_SECRET_NAME = "setu-whatsapp-access-token";
 
 export async function POST(
   request: NextRequest,
@@ -203,6 +210,23 @@ export async function POST(
       );
     }
 
+    try {
+      await addSecretVersion(WHATSAPP_ACCESS_TOKEN_SECRET_NAME, accessToken);
+      console.log("WhatsApp access token persisted to Secret Manager:", {
+        secretName: WHATSAPP_ACCESS_TOKEN_SECRET_NAME,
+      });
+    } catch (secretError) {
+      console.error(
+        "Failed to persist WhatsApp access token to Secret Manager:",
+        secretError,
+      );
+
+      return NextResponse.json(
+        { ok: false, error: "Could not store WhatsApp access token" },
+        { status: 500 },
+      );
+    }
+
     await db.whatsAppChannel.upsert({
       where: { projectId },
       create: {
@@ -210,12 +234,14 @@ export async function POST(
         phoneNumberId: grantedPhoneNumberId,
         businessAccountId: wabaId,
         displayPhoneNumber: phoneData.display_phone_number ?? null,
+        accessTokenRef: WHATSAPP_ACCESS_TOKEN_SECRET_NAME,
         active: true,
       },
       update: {
         phoneNumberId: grantedPhoneNumberId,
         businessAccountId: wabaId,
         displayPhoneNumber: phoneData.display_phone_number ?? null,
+        accessTokenRef: WHATSAPP_ACCESS_TOKEN_SECRET_NAME,
         active: true,
       },
     });

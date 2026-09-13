@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { signOutUser } from "@/lib/auth";
 
 type DocumentItem = {
   id: string;
@@ -244,14 +245,29 @@ export default function KnowledgePage() {
             </div>
           </button>
 
-          <button
-            onClick={() => {
-              window.location.href = `/projects/${projectId}`;
-            }}
-            className="text-sm font-semibold text-slate-500 hover:text-cyan-600"
-          >
-            ← Project Workspace
-          </button>
+          <div className="flex items-center gap-5">
+            <button
+              onClick={() => {
+                window.location.href = `/projects/${projectId}`;
+              }}
+              className="text-sm font-semibold text-slate-500 hover:text-cyan-600"
+            >
+              ← Project Workspace
+            </button>
+
+            <button
+              onClick={async () => {
+                try {
+                  await signOutUser();
+                } finally {
+                  window.location.href = "/";
+                }
+              }}
+              className="text-sm font-semibold text-slate-500 hover:text-red-600"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
